@@ -1,10 +1,17 @@
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QFrame, QPushButton
 from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.config_handler import ConfigHandler
-from src.tagging.tag_group import TagGroup
 from src.styling.style_manager import StyleManager
 from src.styling.styling_utils import create_emoji_font
+from src.tagging.tag_group import TagGroup
 
 button_style = """
     QPushButton {
@@ -35,6 +42,7 @@ tooltip_style = """
     }
 """
 
+
 class TagStatusWidget(QWidget):
     next_clicked: pyqtSignal = pyqtSignal()
     prev_clicked: pyqtSignal = pyqtSignal()
@@ -58,7 +66,7 @@ class TagStatusWidget(QWidget):
 
     def initUI(self):
         container = QFrame(self)
-        container.setStyleSheet(self.style_manager.get_stylesheet(QWidget, 'panel'))
+        container.setStyleSheet(self.style_manager.get_stylesheet(QWidget, "panel"))
         container.setFrameShadow(QFrame.Shadow.Raised)
 
         self.main_layout = QVBoxLayout(container)
@@ -78,8 +86,12 @@ class TagStatusWidget(QWidget):
         self.tag_group_name_label = QLabel("GROUP_TITLE")
         self.tag_group_index_label = QLabel("(0/0)")
 
-        self.tag_group_name_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'bold'))
-        self.tag_group_index_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
+        self.tag_group_name_label.setStyleSheet(
+            self.style_manager.get_stylesheet(QLabel, "bold")
+        )
+        self.tag_group_index_label.setStyleSheet(
+            self.style_manager.get_stylesheet(QLabel, "subtext")
+        )
         self.tag_group_status_label.setStyleSheet(tooltip_style)
 
         tag_group_stats_layout.addWidget(self.tag_group_status_label)
@@ -89,12 +101,16 @@ class TagStatusWidget(QWidget):
         # Selected tags
         tags_selected_layout = QHBoxLayout()
         self.seleted_tags_label = QLabel("0/0 selected")
-        self.seleted_tags_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
+        self.seleted_tags_label.setStyleSheet(
+            self.style_manager.get_stylesheet(QLabel, "subtext")
+        )
         self.auto_scroll_indicator = QLabel("⚡")
         self.auto_scroll_indicator.setFont(create_emoji_font())
         self.auto_scroll_indicator.setStyleSheet(tooltip_style)
         self.auto_scroll_indicator.setToolTip(self.auto_scroll_indicator_tooltip)
-        self.auto_scroll_indicator.mousePressEvent = self._auto_scroll_indicator_click_event
+        self.auto_scroll_indicator.mousePressEvent = (
+            self._auto_scroll_indicator_click_event
+        )
 
         tags_selected_layout.addWidget(self.seleted_tags_label)
         tags_selected_layout.addWidget(self.auto_scroll_indicator)
@@ -103,11 +119,10 @@ class TagStatusWidget(QWidget):
         # Score
         self.score_label = QLabel("score_0")
         self.score_label.setStyleSheet(f"""
-                                  background-color: {self.config_handler.get_color('accent_color')};
+                                  background-color: {self.config_handler.get_color("accent_color")};
                                   color: white; padding:
                                   5px 10px; border-radius: 8px;
                                   """)
-
 
         bottom_row_layout = QHBoxLayout()
         bottom_row_layout.setContentsMargins(0, 0, 0, 0)
@@ -147,7 +162,13 @@ class TagStatusWidget(QWidget):
         buttons_layout.addWidget(self.latest_button)
         buttons_layout.addWidget(self.next_button)
 
-        for button in [skip_button, options_button, self.prev_button, self.latest_button, self.next_button]:
+        for button in [
+            skip_button,
+            options_button,
+            self.prev_button,
+            self.latest_button,
+            self.next_button,
+        ]:
             button.setFixedHeight(30)
             button.setStyleSheet(button_style)
 
@@ -166,17 +187,18 @@ class TagStatusWidget(QWidget):
         # Add click events
         options_button.clicked.connect(self.on_options_click)
 
-
     def set_tag_groups(self, tag_groups: list[TagGroup]):
         self.tag_groups = tag_groups
 
-    def set_active_group(self, order: int):
-        self.active_group = self.tag_groups[order]
+    def set_active_group(self, group: "TagGroup"):
+        self.active_group = group
         self.update_group_ui()
 
     def update_group_ui(self):
         self.tag_group_name_label.setText(self.active_group.name)
-        self.tag_group_index_label.setText(f"({self.active_group.order + 1}/{len(self.tag_groups)})")
+        self.tag_group_index_label.setText(
+            f"({self.active_group.order + 1}/{len(self.tag_groups)})"
+        )
 
         if self.active_group.allow_multiple:
             self.seleted_tags_label.setText(f"0/{self.active_group.min_tags} selected")
@@ -191,33 +213,35 @@ class TagStatusWidget(QWidget):
 
     def check_group_conditions(self, selected_tags: list[int]) -> bool:
         if self.active_group is None:
-            return
+            return False
 
-        # check how many tags exist in current group
         count = self._get_applied_tags(selected_tags)
 
         if self.active_group.allow_multiple:
             condition_met = count >= self.active_group.min_tags
-            self.seleted_tags_label.setText(f"{count}/{self.active_group.min_tags} selected")
+            self.seleted_tags_label.setText(
+                f"{count}/{self.active_group.min_tags} selected"
+            )
         else:
             condition_met = count == 1
             self.seleted_tags_label.setText(f"{count}/1 selected")
         self._set_status_label(condition_met)
 
-        if condition_met and self.active_group.is_required:
-            self.is_valid = True
-        if not condition_met and self.active_group.is_required:
-            self.is_valid = False
-        if not condition_met and not self.active_group.is_required:
+        # Simplified — covers all four cases explicitly
+        if self.active_group.is_required:
+            self.is_valid = condition_met
+        else:
             self.is_valid = True
 
         self._update_button_states()
 
-        will_autoscroll = self.is_valid \
-            and not condition_met \
-            and self._is_condition_met_on_next_add(selected_tags) \
-            and not self.active_group.prevent_auto_scroll \
+        will_autoscroll = (
+            self.is_valid
+            and not condition_met
+            and self._is_condition_met_on_next_add(selected_tags)
+            and not self.active_group.prevent_auto_scroll
             and self.config_handler.get_value("behaviour.auto_scroll_on_tag_condition")
+        )
         self._set_auto_scroll_indicator(will_autoscroll)
 
         return self.is_valid
@@ -248,7 +272,12 @@ class TagStatusWidget(QWidget):
 
     def _set_status_label(self, condition: bool):
 
-        if condition and self.active_group.is_required or condition and not self.active_group.is_required:
+        if (
+            condition
+            and self.active_group.is_required
+            or condition
+            and not self.active_group.is_required
+        ):
             self.tag_group_status_label.setText("🟢")
             self.tag_group_status_label.setToolTip("Acceptable")
         if not condition and self.active_group.is_required:
@@ -265,10 +294,11 @@ class TagStatusWidget(QWidget):
         emoji = "⚡" if not temp_disabled else "🔅"
         self.auto_scroll_indicator.setText(emoji)
         if temp_disabled:
-            self.auto_scroll_indicator.setToolTip(f"{self.auto_scroll_indicator_tooltip}\nTemporarily disabled. Click to Enable.")
+            self.auto_scroll_indicator.setToolTip(
+                f"{self.auto_scroll_indicator_tooltip}\nTemporarily disabled. Click to Enable."
+            )
         else:
             self.auto_scroll_indicator.setToolTip(self.auto_scroll_indicator_tooltip)
-
 
     def _is_condition_met_on_next_add(self, selected_tags: list[int]):
         """Checks whether the next tag added will meet (and not exceed) the conditions of the active group"""

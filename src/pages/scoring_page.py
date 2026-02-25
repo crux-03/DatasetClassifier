@@ -1,13 +1,3 @@
-"""
-Updated scoring_page.py with improved category button widget and fixed keybind handling.
-
-Key changes:
-1. Uses new CategoryButtonWidget for better visual clarity
-2. Fixed Alt+number keybind toggling for categories
-3. Simplified category button management
-4. Better state management for active categories
-"""
-
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QTransform, QKeySequence
@@ -135,7 +125,7 @@ class ScoringPage(QWidget):
                 unicode = key_to_unicode(key_sequence.toString())
                 shortcuts.append(unicode)
             shortcut_text = " / ".join(shortcuts)
-            if not f"({shortcut_text})" in discard_button.text():
+            if f"({shortcut_text})" not in discard_button.text():
                 discard_button.setText(f"({shortcut_text})        discard")
 
     def update_category_button_labels(self):

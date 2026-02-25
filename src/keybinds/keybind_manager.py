@@ -1,12 +1,15 @@
-from typing import Callable, Dict, Optional, Union, List
-from PyQt6.QtWidgets import QWidget, QPushButton
-from PyQt6.QtGui import QKeySequence, QShortcut
-from PyQt6.QtCore import Qt
 from dataclasses import dataclass
+from typing import Callable, Dict, List, Optional, Union
+
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeySequence, QShortcut
+from PyQt6.QtWidgets import QPushButton, QWidget
+
 
 @dataclass
 class KeyBinding:
     """Represents a single key combination with optional modifiers"""
+
     key: int | str
     modifiers: List[Qt.KeyboardModifier] = None
 
@@ -14,68 +17,78 @@ class KeyBinding:
         if self.modifiers is None:
             self.modifiers = []
 
+
 @dataclass
 class ConfigBinding:
     """Represents a keybinding configuration with its config path"""
+
     config_key: str
     description: str
     default_value: KeyBinding | List[KeyBinding]
 
+
 # Define a type for possible binding targets
 BindTarget = Union[QPushButton, Callable[[], None]]
+
 
 class KeybindHandler:
     def __init__(self, config_handler):
         self.config_handler = config_handler
-        self.registered_pages: Dict[str, 'KeybindPage'] = {}
+        self.registered_pages: Dict[str, "KeybindPage"] = {}
 
         # Define all possible keybindings with their config paths and defaults
         self.binding_definitions = {
-            'next_image': ConfigBinding(
-                config_key='keybindings.next_image',
-                description='Next image',
-                default_value=KeyBinding(Qt.Key.Key_Right)
+            "next_image": ConfigBinding(
+                config_key="keybindings.next_image",
+                description="Next image",
+                default_value=KeyBinding(Qt.Key.Key_Right),
             ),
-            'previous_image': ConfigBinding(
-                config_key='keybindings.previous_image',
-                description='Previous image',
-                default_value=KeyBinding(Qt.Key.Key_Left)
+            "previous_image": ConfigBinding(
+                config_key="keybindings.previous_image",
+                description="Previous image",
+                default_value=KeyBinding(Qt.Key.Key_Left),
             ),
-            'discard': ConfigBinding(
-                config_key='keybindings.discard',
-                description='Discard image',
-                default_value=KeyBinding(Qt.Key.Key_Backspace)
+            "discard": ConfigBinding(
+                config_key="keybindings.discard",
+                description="Discard image",
+                default_value=KeyBinding(Qt.Key.Key_Backspace),
             ),
-            'continue': ConfigBinding(
-                config_key='keybindings.continue',
-                description='Continue',
-                default_value=KeyBinding(Qt.Key.Key_Return)
+            "continue": ConfigBinding(
+                config_key="keybindings.continue",
+                description="Continue",
+                default_value=KeyBinding(Qt.Key.Key_Return),
             ),
-            'blur': ConfigBinding(
-                config_key='keybindings.blur',
-                description='Blur',
-                default_value=KeyBinding(Qt.Key.Key_Space)
+            "blur": ConfigBinding(
+                config_key="keybindings.blur",
+                description="Blur",
+                default_value=KeyBinding(Qt.Key.Key_Space),
             ),
             **{
-                f'key_{i}': ConfigBinding(
-                    config_key=f'keybindings.key_{i}',
-                    description=f'Score {i}',
+                f"key_{i}": ConfigBinding(
+                    config_key=f"keybindings.key_{i}",
+                    description=f"Score {i}",
                     default_value=[
                         KeyBinding(str(i)),  # Normal binding
-                        KeyBinding(str(i), [Qt.KeyboardModifier.AltModifier])  # Alt+number binding
-                    ]
-                ) for i in range(10)
-            }
+                        KeyBinding(
+                            str(i), [Qt.KeyboardModifier.AltModifier]
+                        ),  # Alt+number binding
+                    ],
+                )
+                for i in range(10)
+            },
         }
 
         # In KeybindHandler.__init__
-        self.binding_definitions.update({
-            f'category_{i}': ConfigBinding(
-                config_key=f'keybindings.category_{i}',
-                description=f'Category {i}',
-                default_value=KeyBinding(str(i), [Qt.KeyboardModifier.AltModifier])
-            ) for i in range(10)
-        })
+        self.binding_definitions.update(
+            {
+                f"category_{i}": ConfigBinding(
+                    config_key=f"keybindings.category_{i}",
+                    description=f"Category {i}",
+                    default_value=KeyBinding(str(i), [Qt.KeyboardModifier.AltModifier]),
+                )
+                for i in range(10)
+            }
+        )
 
         # Current bindings cache
         self.current_bindings: Dict[str, List[KeyBinding]] = self._load_keybindings()
@@ -87,7 +100,9 @@ class KeybindHandler:
             value = self.config_handler.get_value(binding_def.config_key)
             if value is None:
                 default = binding_def.default_value
-                bindings[action] = [default] if isinstance(default, KeyBinding) else default
+                bindings[action] = (
+                    [default] if isinstance(default, KeyBinding) else default
+                )
             else:
                 # Convert stored config value to KeyBinding objects
                 # Implementation depends on how you store keybindings in config
@@ -102,7 +117,7 @@ class KeybindHandler:
             return [KeyBinding(v) for v in value]
         return [KeyBinding(value)]
 
-    def register_page(self, page_id: str, page: 'KeybindPage'):
+    def register_page(self, page_id: str, page: "KeybindPage"):
         """Register a page to receive keybinding updates"""
         self.registered_pages[page_id] = page
         page.apply_keybindings(self.current_bindings)
@@ -124,13 +139,16 @@ class KeybindHandler:
             for page in self.registered_pages.values():
                 page.apply_keybindings({action: new_bindings})
 
+
 class KeybindPage:
     def __init__(self, widget: QWidget):
         self.widget = widget
         self.shortcuts: Dict[str, List[QShortcut]] = {}
         self.bindings: Dict[str, Optional[BindTarget]] = {}
 
-    def register_binding(self, action: str, target: Optional[BindTarget] = None, use_alt: bool = False):
+    def register_binding(
+        self, action: str, target: Optional[BindTarget] = None, use_alt: bool = False
+    ):
         """Register a button or function to be bound to a specific key action"""
         if use_alt:
             # For Alt-modified bindings, store with modifier flag
@@ -161,9 +179,14 @@ class KeybindPage:
 
                 def create_handler(target: BindTarget):
                     if isinstance(target, QPushButton):
+
                         def handler():
-                            if target.isEnabled():
-                                target.click()
+                            try:
+                                if target.isEnabled():
+                                    target.click()
+                            except RuntimeError:
+                                # Widget was deleted between shortcut creation and activation
+                                pass
                     else:  # Callable
                         handler = target
                     return handler
@@ -190,6 +213,9 @@ class KeybindPage:
                 shortcut.setEnabled(False)
                 shortcut.deleteLater()
             del self.shortcuts[action]
+        # Also remove the stale target reference
+        if action in self.bindings:
+            del self.bindings[action]
 
     def _clear_shortcuts(self):
         """Clear all shortcuts"""
