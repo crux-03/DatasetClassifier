@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from os import path
 from pathlib import Path
-from typing import List, Self, Set
+from typing import Dict, List, Self, Set, Tuple
 
 from src.config_handler import ConfigHandler
 
@@ -27,22 +27,43 @@ class ExportImage:
     categories: List[str]
     tag_ids: List[int] = field(default_factory=list)
     additional_tags: Set[str] = field(default_factory=set)
-    
-    def __init__(self, id: int, source_path: str, dest_path: str, score: str, categories: List[str], tag_ids: List[int] = [], additional_tags = None):
+    prepend_tags: List[str] = field(default_factory=list)
+    tags_to_remove: Set[str] = field(default_factory=set)
+    tag_replacements: List[Tuple[str, str]] = field(default_factory=list)  # (pattern, replacement)
+    sort_subdirectories: List[str] = field(default_factory=list)
+
+    def __init__(
+        self,
+        id: int,
+        source_path: str,
+        dest_path: str,
+        score: str,
+        categories: List[str],
+        tag_ids: List[int] = [],
+        additional_tags=None,
+        prepend_tags=None,
+        tags_to_remove=None,
+        tag_replacements=None,
+        sort_subdirectories=None,
+    ):
         self.id = id
         self.source_path = source_path
         self.dest_path = dest_path
         self.score = score
         self.categories = categories
         self.tag_ids = tag_ids if tag_ids is not None else []
-        
-        # Ensure additional_tags is always a set
+
         if additional_tags is None:
             self.additional_tags = set()
         elif isinstance(additional_tags, list):
             self.additional_tags = set(additional_tags)
         else:
             self.additional_tags = additional_tags
+
+        self.prepend_tags = list(prepend_tags) if prepend_tags else []
+        self.tags_to_remove = set(tags_to_remove) if tags_to_remove else set()
+        self.tag_replacements = list(tag_replacements) if tag_replacements else []
+        self.sort_subdirectories = list(sort_subdirectories) if sort_subdirectories else []
 
     def apply_rule(self, rule: ExportRule, output_dir, seperate_by_score: bool, config: ConfigHandler) -> Self:
         return self.__class__(
@@ -52,13 +73,24 @@ class ExportImage:
             score=self.score,
             categories=self.categories,
             tag_ids=self.tag_ids,
-            additional_tags=self.additional_tags
+            additional_tags=self.additional_tags,
+            prepend_tags=self.prepend_tags,
+            tags_to_remove=self.tags_to_remove,
+            tag_replacements=self.tag_replacements,
+            sort_subdirectories=self.sort_subdirectories,
         )
-    
+
     def create_path(self, rule: ExportRule, output_dir, seperate_by_score: bool, config: ConfigHandler) -> str:
         filename = Path(self.source_path).name
         _, scores = config.get_scores()
+
         if seperate_by_score:
-            return path.abspath(path.join(output_dir, scores[self.score], rule.destination, filename))
+            base = path.join(output_dir, scores[self.score], rule.destination)
         else:
-            return path.abspath(path.join(output_dir, rule.destination, filename))
+            base = path.join(output_dir, rule.destination)
+
+        # Append any conditional sort subdirectories in order
+        for subdir in self.sort_subdirectories:
+            base = path.join(base, subdir)
+
+        return path.abspath(path.join(base, filename))

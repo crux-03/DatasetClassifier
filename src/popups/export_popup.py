@@ -265,6 +265,11 @@ class ExportPopup(QWidget):
         self.export_captions.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
         layout.addWidget(self.export_captions)
 
+        self.require_captions = QCheckBox("Require captions")
+        self.require_captions.setChecked(True)
+        self.require_captions.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
+        layout.addWidget(self.require_captions)
+
         # Separate by score
         self.seperate_by_score = QCheckBox("Separate images by score (create subdirectories)")
         self.seperate_by_score.setChecked(self.config.get_export_option('seperate_by_score'))
@@ -375,6 +380,7 @@ class ExportPopup(QWidget):
             'scores': [name for name, checkbox in self.checkboxes.items() if checkbox.isChecked()],
             'seperate_by_score': self.seperate_by_score.isChecked(),
             'export_captions': self.export_captions.isChecked(),
+            'require_captions': self.require_captions.isChecked(),
             'delete_images': self.delete_images.isChecked(),
             'apply_tag_rules': self.apply_tag_rules.isChecked(),
             'project_id': self.project_id

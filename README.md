@@ -128,11 +128,42 @@ These are rules you can apply to a TagGroup to control when it appears. You can 
 When working with large datasets and lots of TagGroups, spending some time on strong activation conditions can potentially save you hours of work—you won't have to skip through irrelevant groups manually.
 
 #### Export Conditions
-These let you automatically add new tags during export based on conditions. They use the same syntax as Activation Conditions.
+Export conditions let you automatically modify tags or sort images during export based on conditions.
+They use the same syntax as Activation Conditions, and are executed in order.
 
-The main use case is adding tags you realized you needed halfway through tagging. Let's say you have a `perspectives` group with the tags `from_above`, `from_below`, `from_side`, and you realize you want a tag for mixed perspectives. You can create an export condition that says "if the perspectives group has more than one tag, add the `mixed perspectives` tag".
+There are four operation types:
 
-Note that currently this adds tags *in addition to* the existing ones used in the condition. I plan on adding a mode setting (replace, append, etc.) in the future.
+**Add Tags** — Adds tags to the caption, either at the start or end. Adding at the start is useful for
+trigger words that need to appear first in the caption (e.g. for LoRA training). Adding at the end is
+useful for tags you realized you needed halfway through tagging. For example, if you have a `Perspectives`
+group with the tags `from_above`, `from_below`, `from_side`, you could create a rule that says "if the
+perspectives group has more than one tag, add the `mixed perspectives` tag".
+
+**Remove Tags** — Removes tags from the caption by exact match. Useful for stripping out tags that
+shouldn't appear in certain contexts, such as removing a quality tag from images that matched a
+specific condition.
+
+**Replace Tags (Regex)** — Performs a regex search and replace across all tags in the caption.
+Useful for normalizing inconsistent tags (e.g. replacing `transparent body` and `see-through body`
+with a single canonical tag), or cleaning up tags before export.
+
+**Sort into Subdirectory** — Moves images into subfolders based on conditions. Similar to how
+Categories work (though categories still take precedence), but instead of being limited to one
+layer of nesting, these conditions are applied relative to where the image already is. Since
+conditions are executed in order, you can chain them: first sort all images with a completed
+`Background` group into a `background` subfolder, then create three rules after that to further
+sort them into `forest`, `city` and `beach`. The final export would look something like:
+
+```
+- background (3 folders, 0 images):
+  - forest (13 images)
+  - city (21 images)
+  - beach (42 images)
+```
+
+This is especially useful for balancing subsets during training. By sorting images into subfolders
+by concept, you can assign different repeat counts to underrepresented concepts in your training
+config, ensuring the model learns each concept equally well.
 
 #### Syntax Examples
 

@@ -1,5 +1,5 @@
 import src.database.migrate.migrations.create_database as init
-from src.database.migrate.migrations import migration_001_categories
+from src.database.migrate.migrations import migration_001_categories, migration_005_tag_rules, migration_006_tag_rule_order
 
 migrations = [
     (
@@ -34,6 +34,18 @@ migrations = [
         4,
         "Refactor categories to dedicated tables",
         migration_001_categories.create_categories_migration(),
+        None
+    ),
+    (
+        5,
+        "Add operation_type and operation_data to export_tag_rules",
+        migration_005_tag_rules.create_export_rule_operations_migration(),
+        None
+    ),
+    (
+    6,
+        "Add rule_order to export_tag_rules",
+        migration_006_tag_rule_order.create_rule_order_migration(),
         None
     )
 ]
